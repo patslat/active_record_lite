@@ -11,64 +11,68 @@ class AssocParams
 end
 
 class BelongsToAssocParams < AssocParams
+  attr_reader :other_class, :other_table, :primary_key, :foreign_key
   def initialize(name, params)
+    @other_class = if params[:class_name]
+                    params[:class_name].constantize
+                  else
+                    name.to_s.camelcase.constantize
+                  end
+    @other_table = other_class.table_name
+    @primary_key = params[:primary_key] || :id
+    @foreign_key = params[:foreign_key] || "#{name}_id".to_sym
   end
-
+      
   def type
-  end
-end
-
+  end 
+end   
+      
 class HasManyAssocParams < AssocParams
+  attr_reader :other_class, :other_table, :primary_key, :foreign_key
   def initialize(name, params, self_class)
-  end
-
+      @other_class = params[:class_name] || name.to_s.singularize.camelcase.constantize
+      @other_table = other_class.table_name
+      @primary_key = params[:primary_key] || :id
+      @foreign_key = params[:foreign_key] || "#{name}_id".to_sym
+    end
+      
   def type
-  end
-end
-
+  end 
+end   
+      
 module Associatable
   def assoc_params
-  end
-
+  end 
+      
   def belongs_to(name, params = {})
     define_method(name) do
-      other_class = if params[:class_name]
-                      params[:class_name].constantize
-                    else
-                      name.to_s.camelcase.constantize
-                    end
-
-      other_table_name = other_class.table_name
-      primary_key = params[:primary_key] || :id
-      foreign_key = params[:foreign_key] || "#{name}_id".to_sym
+      bt = BelongsToAssocParams(name, params)
       
       query = <<-SQL
-                SELECT DISTINCT #{other_table_name}.*
+                SELECT DISTINCT #{bt.other_table}.*
                 FROM #{self.class.table_name}
-                JOIN #{other_table_name}
-                ON #{self.class.table_name}.#{primary_key} = #{foreign_key}
+                JOIN #{bt.other_table}
+                ON #{self.class.table_name}.#{bt.primary_key} = #{bt.foreign_key}
               SQL
+              
       results = DBConnection.execute(query)
-      other_class.parse_all(results)
+      bt.other_class.parse_all(results)
     end
   end
 
   def has_many(name, params = {})
     define_method(name) do
-      other_class = params[:class_name] || name.to_s.singularize.camelcase.constantize
-      other_table_name = other_class.table_name
-      primary_key = params[:primary_key] || :id
-      foreign_key = params[:foreign_key] || "#{name}_id".to_sym
+      aps = HasManyAssocParams.new(name, params, self.class)
       
       query = <<-SQL
-                SELECT DISTINCT #{other_table_name}.*
+                SELECT DISTINCT #{aps.other_table}.*
                 FROM #{self.class.table_name}
-                JOIN #{other_table_name}
-                ON #{self.class.table_name}.#{primary_key} = #{foreign_key}
+                JOIN #{aps.other_table}
+                ON #{self.class.table_name}.#{aps.primary_key} = #{aps.foreign_key}
               SQL
               
       results = DBConnection.execute(query)
-      other_class.parse_all(results)
+      aps.other_class.parse_all(results)
     end
   end
 
