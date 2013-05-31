@@ -13,8 +13,8 @@ class MassObject
 
   def initialize(params = {})
     params.each do |attr_name, value|
-      unless self.class.attributes.include?(attr_name)
-        raise "mass assignment to unregistered attribute #{attr_name}"
+      unless self.class.attributes.include?(attr_name.to_sym)
+        raise "mass assignment to unregistered attribute #{attr_name.to_sym}"
       end
       send("#{attr_name}=".to_sym, value)
     end
