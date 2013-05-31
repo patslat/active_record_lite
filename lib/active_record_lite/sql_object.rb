@@ -6,6 +6,7 @@ require 'active_support/inflector'
 
 class SQLObject < MassObject
   extend Searchable
+  extend Associatable
   
   def self.set_table_name(table_name)
     @table_name = table_name.underscore
@@ -23,11 +24,13 @@ class SQLObject < MassObject
   end
 
   def self.find(id)
+    object =
     DBConnection.execute("
     SELECT *
     FROM #{table_name}
     WHERE id = #{id}
-    ").map { |row| new(row) }
+    ").first
+    new(object)
   end
   
   def save
