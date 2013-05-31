@@ -5,6 +5,8 @@ require_relative './searchable'
 require 'active_support/inflector'
 
 class SQLObject < MassObject
+  extend Searchable
+  
   def self.set_table_name(table_name)
     @table_name = table_name.underscore
   end
@@ -32,6 +34,7 @@ class SQLObject < MassObject
     id ? update : create
   end
 
+
   private
 
   def create
@@ -46,7 +49,6 @@ class SQLObject < MassObject
     DBConnection.execute(query, *attribute_values)
     self.id = DBConnection.last_insert_row_id
   end
-  
 
   def update
     query = <<-SQL
