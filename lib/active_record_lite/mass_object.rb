@@ -1,7 +1,22 @@
+class Object
+  def new_attr_accessor(*attributes)
+    attributes.each do |attr_name|
+      define_method(attr_name) do
+        instance_variable_get("@#{attr_name}".to_sym)
+      end
+      
+      define_method("#{attr_name}=") do |val|
+        instance_variable_set("@#{attr_name}", val)
+      end
+    end
+  end
+end
+
 class MassObject
+  
   def self.set_attrs(*attributes)
     @attributes = attributes
-    attributes.each { |attr_name| attr_accessor(attr_name) }
+    new_attr_accessor(*attributes)
   end
 
   def self.attributes
